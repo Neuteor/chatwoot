@@ -50,6 +50,11 @@ const toggleModalDescription = ref(
 
 const records = computed(() => getters['automations/getAutomations'].value);
 
+const headerTitle = computed(() => {
+  const count = records.value ? records.value.length : 0;
+  return `${t('AUTOMATION.HEADER')} (${count})`;
+});
+
 const filteredRecords = computed(() => {
   const query = searchQuery.value.trim();
   if (!query) return records.value;
@@ -403,7 +408,7 @@ usePageCommands(() => [
     <template #header>
       <BaseSettingsHeader
         v-model:search-query="searchQuery"
-        :title="$t('AUTOMATION.HEADER')"
+        :title="headerTitle"
         :description="$t('AUTOMATION.DESCRIPTION')"
         :link-text="$t('AUTOMATION.LEARN_MORE')"
         :search-placeholder="$t('AUTOMATION.SEARCH_PLACEHOLDER')"
