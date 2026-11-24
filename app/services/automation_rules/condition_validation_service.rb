@@ -15,7 +15,7 @@ class AutomationRules::ConditionValidationService
 
   def perform
     @rule.conditions.each do |condition|
-      return false unless valid_condition?(condition) && valid_query_operator?(condition)
+      return false unless valid_condition?(condition) && valid_query_operator?(condition) && valid_numeric_condition?(condition)
     end
 
     true
@@ -49,11 +49,12 @@ class AutomationRules::ConditionValidationService
     end
   end
 
-  def operation_valid?(condition, filter)
+    def operation_valid?(condition, filter)
     filter_operator = condition['filter_operator']
 
     # attribute changed is a special case
     return true if filter_operator == 'attribute_changed'
+    return true if ['is_greater_than', 'is_less_than'].include?(filter_operator) && ['number', 'integer'].include?(filter['data_type'])
 
     filter['filter_operators'].include?(filter_operator)
   end
@@ -64,5 +65,35 @@ class AutomationRules::ConditionValidationService
     @account.custom_attribute_definitions.where(
       attribute_model: attribute_model
     ).find_by(attribute_key: attribute_key).present?
+  end
+
+  def valid_numeric_condition?(condition)
+    is_numeric_operator = ['is_greater_than', 'is_less_than'].include?(condition['filter_operator'])
+
+    is_numeric_attribute = false
+    key = condition['attribute_key']
+    attribute_model = condition['custom_attribute_type'].presence || self.class::ATTRIBUTE_MODEL
+    custom_attribute = @account.custom_attribute_definitions.find_by(
+      attribute_key: key,
+      attribute_model: attribute_model
+    )
+    if custom_attribute && custom_attribute.attribute_display_type == 'number'
+      is_numeric_attribute = true
+    end
+
+    if is_numeric_operator || is_numeric_attribute
+      values = condition['values']
+      return false if values.blank?
+
+      values.each do |val|
+        begin
+          Float(val.to_s)
+        rescue ArgumentError, TypeError
+          return false
+        end
+      end
+    end
+
+    true
   end
 end

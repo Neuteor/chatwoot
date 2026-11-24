@@ -413,6 +413,100 @@ RSpec.describe AutomationRules::ConditionsFilterService do
       end
     end
 
+    context 'when conditions based on numeric custom attributes' do
+      before do
+        create(:custom_attribute_definition,
+               attribute_key: 'employee_count',
+               account: account,
+               attribute_model: 'conversation_attribute',
+               attribute_display_type: 'number')
+      end
+
+      it 'returns true when value is greater than threshold' do
+        conversation.update(additional_attributes: { employee_count: 150 })
+        rule.conditions = [
+          {
+            'values': ['100'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'is_greater_than',
+            'custom_attribute_type': 'conversation_attribute'
+          }
+        ]
+        rule.save
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+      end
+
+      it 'returns false when value is not greater than threshold' do
+        conversation.update(additional_attributes: { employee_count: 50 })
+        rule.conditions = [
+          {
+            'values': ['100'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'is_greater_than',
+            'custom_attribute_type': 'conversation_attribute'
+          }
+        ]
+        rule.save
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+      end
+
+      it 'returns true when value is less than threshold' do
+        conversation.update(additional_attributes: { employee_count: 50 })
+        rule.conditions = [
+          {
+            'values': ['100'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'is_less_than',
+            'custom_attribute_type': 'conversation_attribute'
+          }
+        ]
+        rule.save
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+      end
+
+      it 'returns true when float value is equal to threshold' do
+        conversation.update(additional_attributes: { employee_count: 100.0 })
+        rule.conditions = [
+          {
+            'values': ['100'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'equal_to',
+            'custom_attribute_type': 'conversation_attribute'
+          }
+        ]
+        rule.save
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+      end
+
+      it 'fails gracefully and returns false when value is non-numeric' do
+        conversation.update(additional_attributes: { employee_count: 'not-a-number' })
+        rule.conditions = [
+          {
+            'values': ['100'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'is_greater_than',
+            'custom_attribute_type': 'conversation_attribute'
+          }
+        ]
+        rule.save
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+      end
+
+      it 'fails gracefully and returns false when value is empty' do
+        conversation.update(additional_attributes: {})
+        rule.conditions = [
+          {
+            'values': ['100'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'is_greater_than',
+            'custom_attribute_type': 'conversation_attribute'
+          }
+        ]
+        rule.save
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+      end
+    end
+
     context 'when conditions based on contact country_code' do
       before do
         conversation.update(additional_attributes: { country_code: 'US' })

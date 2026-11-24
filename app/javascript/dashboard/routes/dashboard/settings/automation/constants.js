@@ -3,6 +3,7 @@ import {
   OPERATOR_TYPES_2,
   OPERATOR_TYPES_3,
   OPERATOR_TYPES_6,
+  OPERATOR_TYPES_7,
   CAPTAIN_OPERATOR_TYPES,
 } from './operators';
 
@@ -857,3 +858,5 @@ export const DELAYED_TRIGGERS = [
 ];
 
 export const DEFAULT_TRIGGER = DELAYED_TRIGGERS[0].key;
+
+export const NUMERIC_OPERATORS = ['equal_to', 'not_equal_to', 'is_greater_than', 'is_less_than'];

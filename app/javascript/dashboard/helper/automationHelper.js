@@ -8,6 +8,7 @@ import {
   OPERATOR_TYPES_1,
   OPERATOR_TYPES_3,
   OPERATOR_TYPES_4,
+  OPERATOR_TYPES_7,
 } from 'dashboard/routes/dashboard/settings/automation/operators';
 import { CAPTAIN_CONDITION } from 'dashboard/routes/dashboard/settings/automation/constants';
 import actionQueryGenerator from './actionQueryGenerator';
@@ -64,7 +65,7 @@ export const getOperatorTypes = key => {
   const operatorMap = {
     list: OPERATOR_TYPES_1,
     text: OPERATOR_TYPES_3,
-    number: OPERATOR_TYPES_1,
+    number: OPERATOR_TYPES_7,
     link: OPERATOR_TYPES_1,
     date: OPERATOR_TYPES_4,
     checkbox: OPERATOR_TYPES_1,

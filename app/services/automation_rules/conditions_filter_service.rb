@@ -59,6 +59,11 @@ class AutomationRules::ConditionsFilterService < FilterService
   end
 
   def apply_filter(query_hash, current_index)
+    if numeric_comparison?(query_hash)
+      @query_string += numeric_query_string(query_hash, current_index)
+      return
+    end
+
     conversation_filter = @conversation_filters[query_hash['attribute_key']]
     contact_filter = @contact_filters[query_hash['attribute_key']]
     message_filter = @message_filters[query_hash['attribute_key']]
@@ -169,6 +174,92 @@ class AutomationRules::ConditionsFilterService < FilterService
   end
 
   private
+
+  def numeric_comparison?(query_hash)
+    operator = query_hash['filter_operator']
+    return true if ['is_greater_than', 'is_less_than'].include?(operator)
+
+    attribute_key = query_hash['attribute_key']
+    attribute_model = query_hash['custom_attribute_type'].presence || 'conversation_attribute'
+    custom_attribute_def = @account.custom_attribute_definitions.find_by(
+      attribute_key: attribute_key,
+      attribute_model: attribute_model
+    )
+    if custom_attribute_def && custom_attribute_def.attribute_display_type == 'number'
+      return true
+    end
+
+    false
+  end
+
+  def numeric_column_expression(query_hash)
+    attribute_key = query_hash['attribute_key']
+    attribute_model = query_hash['custom_attribute_type'].presence
+    if attribute_model.present?
+      table_name = attribute_model == 'contact_attribute' ? 'contacts' : 'conversations'
+      return "#{table_name}.additional_attributes ->> '#{attribute_key}'"
+    end
+
+    conversation_filter = @conversation_filters[attribute_key]
+    contact_filter = @contact_filters[attribute_key]
+    message_filter = @message_filters[attribute_key]
+
+    if conversation_filter
+      if conversation_filter['attribute_type'] == 'additional_attributes'
+        "conversations.additional_attributes ->> '#{attribute_key}'"
+      else
+        "conversations.#{attribute_key}"
+      end
+    elsif contact_filter
+      if contact_filter['attribute_type'] == 'additional_attributes'
+        "contacts.additional_attributes ->> '#{attribute_key}'"
+      else
+        "contacts.#{attribute_key}"
+      end
+    elsif message_filter
+      attribute_key = 'processed_message_content' if attribute_key == 'content'
+      attribute_key = 'private' if attribute_key == 'private_note'
+      "messages.#{attribute_key}"
+    else
+      custom_attr = @account.custom_attribute_definitions.find_by(attribute_key: attribute_key)
+      if custom_attr
+        table_name = custom_attr.attribute_model == 'contact_attribute' ? 'contacts' : 'conversations'
+        "#{table_name}.additional_attributes ->> '#{attribute_key}'"
+      else
+        nil
+      end
+    end
+  end
+
+  def numeric_query_string(query_hash, current_index)
+    query_operator = query_hash['query_operator']
+    column_expr = numeric_column_expression(query_hash)
+
+    if column_expr.blank?
+      return " FALSE #{query_operator} "
+    end
+
+    threshold_val = query_hash['values']&.first
+    if threshold_val.blank?
+      return " FALSE #{query_operator} "
+    end
+
+    @filter_values["value_#{current_index}"] = threshold_val.to_f
+
+    sql_operator = case query_hash['filter_operator']
+                   when 'equal_to' then '='
+                   when 'not_equal_to' then '!='
+                   when 'is_greater_than' then '>'
+                   when 'is_less_than' then '<'
+                   else nil
+                   end
+
+    if sql_operator.nil?
+      return " FALSE #{query_operator} "
+    end
+
+    " (CASE WHEN (#{column_expr})::text ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (#{column_expr})::numeric #{sql_operator} :value_#{current_index} ELSE FALSE END) #{query_operator} "
+  end
 
   def captain_indexes
     @captain_indexes ||= @rule.conditions.each_index.select do |index|

@@ -5,6 +5,12 @@
     "LEARN_MORE": "Learn more about automation",
     "COUNT": "{n} automation | {n} automations",
     "HEADER_BTN_TXT": "Create Automation",
+    "OPERATORS": {
+      "EQUAL_TO": "Equal to",
+      "NOT_EQUAL_TO": "Not equal to",
+      "IS_GREATER_THAN": "Is greater than",
+      "IS_LESS_THAN": "Is less than"
+    },
     "LOADING": "Fetching automation rules",
     "SEARCH_PLACEHOLDER": "Search automation rules...",
     "NO_RESULTS": "No automation rules found matching your search",

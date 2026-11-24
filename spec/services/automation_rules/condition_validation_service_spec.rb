@@ -116,6 +116,55 @@ RSpec.describe AutomationRules::ConditionValidationService do
       end
     end
 
+    context 'with numeric custom attribute' do
+      before do
+        create(:custom_attribute_definition,
+               attribute_key: 'employee_count',
+               account: account,
+               attribute_model: 'conversation_attribute',
+               attribute_display_type: 'number')
+      end
+
+      it 'returns true for valid integer' do
+        rule.conditions = [
+          {
+            'values': ['100'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'is_greater_than',
+            'custom_attribute_type': 'conversation_attribute'
+          }
+        ]
+        rule.save
+        expect(described_class.new(rule).perform).to be(true)
+      end
+
+      it 'returns true for valid float' do
+        rule.conditions = [
+          {
+            'values': ['12.34'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'equal_to',
+            'custom_attribute_type': 'conversation_attribute'
+          }
+        ]
+        rule.save
+        expect(described_class.new(rule).perform).to be(true)
+      end
+
+      it 'returns false for invalid number' do
+        rule.conditions = [
+          {
+            'values': ['abc'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'is_less_than',
+            'custom_attribute_type': 'conversation_attribute'
+          }
+        ]
+        rule.save
+        expect(described_class.new(rule).perform).to be(false)
+      end
+    end
+
     context 'with missing custom attribute' do
       before do
         rule.conditions = [
