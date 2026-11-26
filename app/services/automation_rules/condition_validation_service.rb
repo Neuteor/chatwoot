@@ -49,11 +49,13 @@ class AutomationRules::ConditionValidationService
     end
   end
 
-  def operation_valid?(condition, filter)
+    def operation_valid?(condition, filter)
     filter_operator = condition['filter_operator']
 
     # attribute changed is a special case
     return true if filter_operator == 'attribute_changed'
+
+    return true if %w[greater_than less_than equal_to].include?(filter_operator) && %w[number integer decimal].include?(filter['data_type'])
 
     filter['filter_operators'].include?(filter_operator)
   end

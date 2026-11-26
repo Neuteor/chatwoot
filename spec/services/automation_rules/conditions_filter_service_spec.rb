@@ -432,5 +432,69 @@ RSpec.describe AutomationRules::ConditionsFilterService do
         expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
       end
     end
+
+    context 'when conditions based on numeric comparison operators' do
+      before do
+        create(:custom_attribute_definition,
+               attribute_key: 'employee_count',
+               account: account,
+               attribute_model: 'contact_attribute',
+               attribute_display_type: 'number')
+
+        create(:custom_attribute_definition,
+               attribute_key: 'monthly_revenue',
+               account: account,
+               attribute_model: 'contact_attribute',
+               attribute_display_type: 'decimal')
+      end
+
+      it 'matches greater_than comparison for integer values' do
+        conversation.contact.update!(custom_attributes: { employee_count: 150 })
+        rule.update!(conditions: [
+          { 'values': ['100'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }
+        ])
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+      end
+
+      it 'does not match greater_than comparison if value is less' do
+        conversation.contact.update!(custom_attributes: { employee_count: 50 })
+        rule.update!(conditions: [
+          { 'values': ['100'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }
+        ])
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+      end
+
+      it 'matches less_than comparison for decimal values' do
+        conversation.contact.update!(custom_attributes: { monthly_revenue: 1500.50 })
+        rule.update!(conditions: [
+          { 'values': ['2000.75'], 'attribute_key': 'monthly_revenue', 'query_operator': nil, 'filter_operator': 'less_than', 'custom_attribute_type': 'contact_attribute' }
+        ])
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+      end
+
+      it 'matches equal_to comparison numerically' do
+        conversation.contact.update!(custom_attributes: { monthly_revenue: 100.0 })
+        rule.update!(conditions: [
+          { 'values': ['100'], 'attribute_key': 'monthly_revenue', 'query_operator': nil, 'filter_operator': 'equal_to', 'custom_attribute_type': 'contact_attribute' }
+        ])
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+      end
+
+      it 'fails gracefully and returns false for non-numeric values' do
+        conversation.contact.update!(custom_attributes: { employee_count: 'not-a-number' })
+        rule.update!(conditions: [
+          { 'values': ['100'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }
+        ])
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+      end
+
+      it 'fails gracefully and returns false for empty values' do
+        conversation.contact.update!(custom_attributes: { employee_count: nil })
+        rule.update!(conditions: [
+          { 'values': ['100'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }
+        ])
+        expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+      end
+    end
   end
 end

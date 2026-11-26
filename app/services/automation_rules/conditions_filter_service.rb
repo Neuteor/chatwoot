@@ -65,6 +65,8 @@ class AutomationRules::ConditionsFilterService < FilterService
 
     if query_hash['attribute_key'] == Captain::AutomationConditionService::ATTRIBUTE_KEY
       @query_string += captain_query_string(query_hash, current_index)
+    elsif numeric_comparison?(query_hash)
+      @query_string += numeric_comparison_query(query_hash, current_index)
     elsif conversation_filter
       @query_string += conversation_query_string('conversations', conversation_filter, query_hash.with_indifferent_access, current_index)
     elsif contact_filter
@@ -75,6 +77,83 @@ class AutomationRules::ConditionsFilterService < FilterService
       # send table name according to attribute key right now we are supporting contact based custom attribute filter
       @query_string += custom_attribute_query(query_hash.with_indifferent_access, query_hash['custom_attribute_type'], current_index)
     end
+  end
+
+  def numeric_comparison?(query_hash)
+    operator = query_hash['filter_operator']
+    return true if %w[greater_than less_than].include?(operator)
+
+    if operator == 'equal_to'
+      # Check if custom attribute is numeric
+      attribute_model = query_hash['custom_attribute_type'].presence || 'conversation_attribute'
+      custom_attr_def = @account.custom_attribute_definitions.find_by(
+        attribute_key: query_hash['attribute_key'],
+        attribute_model: attribute_model
+      )
+      return true if custom_attr_def.present? && %w[number decimal].include?(custom_attr_def.attribute_display_type)
+
+      # Check if standard attribute is numeric
+      key = query_hash['attribute_key']
+      filter = @conversation_filters[key] || @contact_filters[key] || @message_filters[key]
+      return true if filter.present? && %w[number integer decimal].include?(filter['data_type'])
+    end
+
+    false
+  end
+
+  def attribute_sql_expression(query_hash)
+    key = query_hash['attribute_key']
+
+    if custom_attribute(key, @account, query_hash['custom_attribute_type'])
+      attribute_model = query_hash['custom_attribute_type'].presence || 'conversation_attribute'
+      table_name = attribute_model == 'contact_attribute' ? 'contacts' : 'conversations'
+      "#{table_name}.custom_attributes ->> '#{key}'"
+    elsif (filter = @conversation_filters[key])
+      if filter['attribute_type'] == 'additional_attributes'
+        "conversations.additional_attributes ->> '#{key}'"
+      else
+        "conversations.#{key}"
+      end
+    elsif (filter = @contact_filters[key])
+      if filter['attribute_type'] == 'additional_attributes'
+        "contacts.additional_attributes ->> '#{key}'"
+      else
+        "contacts.#{key}"
+      end
+    elsif (filter = @message_filters[key])
+      "messages.#{key}"
+    else
+      nil
+    end
+  end
+
+  def numeric_comparison_query(query_hash, current_index)
+    sql_expr = attribute_sql_expression(query_hash)
+    return '' if sql_expr.blank?
+
+    operator_symbol = case query_hash['filter_operator']
+                      when 'greater_than' then '>'
+                      when 'less_than' then '<'
+                      when 'equal_to' then '='
+                      else nil
+                      end
+    return '' if operator_symbol.blank?
+
+    val = query_hash['values']&.first
+    numeric_val = begin
+      Float(val)
+    rescue StandardError
+      nil
+    end
+
+    @filter_values["value_#{current_index}"] = numeric_val
+
+    query_operator = query_hash['query_operator'].presence || ''
+
+    # Safe cast of the attribute value to numeric
+    safe_cast = "CASE WHEN #{sql_expr} ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN CAST(#{sql_expr} AS numeric) ELSE NULL END"
+
+    " #{safe_cast} #{operator_symbol} :value_#{current_index} #{query_operator} "
   end
 
   # If attribute_changed type filter is present perform this against array
