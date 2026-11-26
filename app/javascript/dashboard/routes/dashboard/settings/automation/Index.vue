@@ -50,6 +50,14 @@ const toggleModalDescription = ref(
 
 const records = computed(() => getters['automations/getAutomations'].value);
 
+const totalRulesCountLabel = computed(() => {
+  const count = records.value.length;
+  if (count === 1) {
+    return '1 Rule';
+  }
+  return `${count} Rules`;
+});
+
 const filteredRecords = computed(() => {
   const query = searchQuery.value.trim();
   if (!query) return records.value;
@@ -416,9 +424,9 @@ usePageCommands(() => [
             @tab-changed="onTabChanged"
           />
         </template>
-        <template v-if="visibleRecords.length" #count>
+        <template #count>
           <span class="text-body-main text-n-slate-11">
-            {{ $t('AUTOMATION.COUNT', { n: visibleRecords.length }) }}
+            {{ totalRulesCountLabel }}
           </span>
         </template>
         <template #actions>
