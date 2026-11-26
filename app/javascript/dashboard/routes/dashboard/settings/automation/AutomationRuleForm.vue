@@ -23,6 +23,7 @@ import {
   AUTOMATION_ACTION_TYPES,
   CAPTAIN_CONDITION,
   DEFAULT_DELAY_MINUTES,
+  OPERATOR_TYPES_7,
 } from './constants';
 import AutomationRunTypeSelector from './components/AutomationRunTypeSelector.vue';
 import AutomationWaitCondition from './components/AutomationWaitCondition.vue';
@@ -268,12 +269,20 @@ const filterTypes = computed(() => {
     const mappedInputType = INPUT_TYPE_MAP[attr.inputType] || 'plainText';
     const options = props.getConditionDropdownValues(attr.key) || [];
 
-    const filterOperators = (attr.filterOperators || []).map(op => {
+    const isNumeric =
+      attr.attribute_display_type === 'number' ||
+      attr.attribute_display_type === 'decimal' ||
+      attr.inputType === 'number' ||
+      attr.inputType === 'decimal';
+
+    const operatorsList = isNumeric ? OPERATOR_TYPES_7 : (attr.filterOperators || []);
+
+    const filterOperators = operatorsList.map(op => {
       const enriched = operators.value[op.value];
       if (enriched) return enriched;
       return {
         value: op.value,
-        label: t(`FILTER.OPERATOR_LABELS.${op.value}`),
+        label: op.label || t(`FILTER.OPERATOR_LABELS.${op.value}`),
         hasInput: true,
         inputOverride: null,
         icon: h('span', { class: 'i-ph-equals-bold !text-n-blue-11' }),

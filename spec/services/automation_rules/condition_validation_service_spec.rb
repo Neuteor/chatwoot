@@ -133,5 +133,29 @@ RSpec.describe AutomationRules::ConditionValidationService do
         expect(described_class.new(rule).perform).to be(false)
       end
     end
+
+    context 'with numeric comparison operators on custom attributes' do
+      before do
+        create(:custom_attribute_definition,
+               attribute_key: 'employee_count',
+               account: account,
+               attribute_model: 'contact_attribute',
+               attribute_display_type: 'number')
+
+        rule.conditions = [
+          {
+            'values': ['100'],
+            'attribute_key': 'employee_count',
+            'filter_operator': 'greater_than',
+            'custom_attribute_type': 'contact_attribute'
+          }
+        ]
+        rule.save
+      end
+
+      it 'returns true' do
+        expect(described_class.new(rule).perform).to be(true)
+      end
+    end
   end
 end
