@@ -416,9 +416,9 @@ usePageCommands(() => [
             @tab-changed="onTabChanged"
           />
         </template>
-        <template v-if="visibleRecords.length" #count>
+        <template #count>
           <span class="text-body-main text-n-slate-11">
-            {{ $t('AUTOMATION.COUNT', { n: visibleRecords.length }) }}
+            Total Rules: {{ records.length }}
           </span>
         </template>
         <template #actions>
