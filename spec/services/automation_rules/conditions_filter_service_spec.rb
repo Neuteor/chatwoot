@@ -63,6 +63,98 @@ RSpec.describe AutomationRules::ConditionsFilterService do
       end
     end
 
+    context 'when conditions based on numeric custom attributes' do
+      before do
+        create(:custom_attribute_definition,
+               attribute_key: 'employee_count',
+               account: account,
+               attribute_model: 'conversation_attribute',
+               attribute_display_type: 'number')
+      end
+
+      context 'when operator is greater_than' do
+        before do
+          rule.conditions = [
+            {
+              'values': ['100'],
+              'attribute_key': 'employee_count',
+              'filter_operator': 'greater_than',
+              'custom_attribute_type': 'conversation_attribute'
+            }
+          ]
+          rule.save
+        end
+
+        it 'returns true when attribute value is greater' do
+          conversation.update(additional_attributes: { employee_count: 150 })
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+        end
+
+        it 'returns false when attribute value is less' do
+          conversation.update(additional_attributes: { employee_count: 50 })
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+
+        it 'fails gracefully and returns false when attribute value is non-numeric' do
+          conversation.update(additional_attributes: { employee_count: 'abc' })
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+
+        it 'fails gracefully and returns false when attribute value is empty' do
+          conversation.update(additional_attributes: {})
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+      end
+
+      context 'when operator is less_than' do
+        before do
+          rule.conditions = [
+            {
+              'values': ['100.5'],
+              'attribute_key': 'employee_count',
+              'filter_operator': 'less_than',
+              'custom_attribute_type': 'conversation_attribute'
+            }
+          ]
+          rule.save
+        end
+
+        it 'returns true when attribute value is less' do
+          conversation.update(additional_attributes: { employee_count: 50.2 })
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+        end
+
+        it 'returns false when attribute value is greater' do
+          conversation.update(additional_attributes: { employee_count: 150 })
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+      end
+
+      context 'when operator is equal_to' do
+        before do
+          rule.conditions = [
+            {
+              'values': ['100'],
+              'attribute_key': 'employee_count',
+              'filter_operator': 'equal_to',
+              'custom_attribute_type': 'conversation_attribute'
+            }
+          ]
+          rule.save
+        end
+
+        it 'returns true when attribute value is equal' do
+          conversation.update(additional_attributes: { employee_count: 100 })
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+        end
+
+        it 'returns false when attribute value is not equal' do
+          conversation.update(additional_attributes: { employee_count: 101 })
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+      end
+    end
+
     context 'when conditions check assignee presence' do
       let(:agent_bot) { create(:agent_bot, account: account) }
 

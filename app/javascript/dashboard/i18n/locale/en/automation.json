@@ -192,6 +192,11 @@
       "ATLEAST_ONE_CONDITION_REQUIRED": "At least one condition is required",
       "ATLEAST_ONE_ACTION_REQUIRED": "At least one action is required"
     },
+    "OPERATORS": {
+      "EQUAL_TO": "Equal to",
+      "GREATER_THAN": "Greater than",
+      "LESS_THAN": "Less than"
+    },
     "NONE_OPTION": "None",
     "LAST_RESPONDING_AGENT": "Last Responding Agent",
     "EVENTS": {

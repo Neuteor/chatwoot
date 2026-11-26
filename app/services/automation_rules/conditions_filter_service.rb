@@ -58,7 +58,75 @@ class AutomationRules::ConditionsFilterService < FilterService
     end
   end
 
+  def numeric_comparison?(query_hash)
+    return true if %w[greater_than less_than].include?(query_hash['filter_operator'])
+
+    definition = custom_attribute_definition(query_hash['attribute_key'], query_hash['custom_attribute_type'])
+    definition.present? && definition.attribute_display_type == 'number'
+  end
+
+  def custom_attribute_definition(attribute_key, attribute_model)
+    attribute_model = attribute_model.presence || self.class::ATTRIBUTE_MODEL
+    @account.custom_attribute_definitions.where(
+      attribute_model: attribute_model
+    ).find_by(attribute_key: attribute_key)
+  end
+
+  def evaluate_numeric_comparison(query_hash)
+    actual_value = get_attribute_value(query_hash)
+    return false if actual_value.nil?
+
+    threshold_value = query_hash['values']&.first
+    return false if threshold_value.nil?
+
+    actual_num = Float(actual_value) rescue nil
+    threshold_num = Float(threshold_value) rescue nil
+
+    return false if actual_num.nil? || threshold_num.nil?
+
+    case query_hash['filter_operator']
+    when 'greater_than'
+      actual_num > threshold_num
+    when 'less_than'
+      actual_num < threshold_num
+    when 'equal_to'
+      actual_num == threshold_num
+    when 'not_equal_to'
+      actual_num != threshold_num
+    else
+      false
+    end
+  end
+
+  def get_attribute_value(query_hash)
+    attribute_key = query_hash['attribute_key']
+    attribute_model = query_hash['custom_attribute_type']
+
+    if attribute_model.present?
+      case attribute_model
+      when 'conversation_attribute'
+        @conversation.additional_attributes&.[](attribute_key)
+      when 'contact_attribute'
+        @conversation.contact&.additional_attributes&.[](attribute_key)
+      end
+    else
+      if @conversation.respond_to?(attribute_key)
+        @conversation.send(attribute_key)
+      elsif @conversation.contact&.respond_to?(attribute_key)
+        @conversation.contact.send(attribute_key)
+      end
+    end
+  end
+
   def apply_filter(query_hash, current_index)
+    if numeric_comparison?(query_hash)
+      result = evaluate_numeric_comparison(query_hash)
+      query_operator = query_hash['query_operator']
+      op_suffix = query_operator.present? ? " #{query_operator} " : ""
+      @query_string += result ? " 1 = 1#{op_suffix}" : " 1 = 0#{op_suffix}"
+      return
+    end
+
     conversation_filter = @conversation_filters[query_hash['attribute_key']]
     contact_filter = @contact_filters[query_hash['attribute_key']]
     message_filter = @message_filters[query_hash['attribute_key']]

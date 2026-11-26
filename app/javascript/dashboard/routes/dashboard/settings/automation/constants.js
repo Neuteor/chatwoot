@@ -4,6 +4,7 @@ import {
   OPERATOR_TYPES_3,
   OPERATOR_TYPES_6,
   CAPTAIN_OPERATOR_TYPES,
+  OPERATOR_TYPES_STANDARD,
 } from './operators';
 
 // Free-text condition judged by Captain when the rule runs; offered on every event.
@@ -16,7 +17,7 @@ export const CAPTAIN_CONDITION = {
   filterOperators: CAPTAIN_OPERATOR_TYPES,
 };
 
-export const AUTOMATIONS = {
+export const AUTOMATIONS = { 
   message_created: {
     conditions: [
       CAPTAIN_CONDITION,
@@ -24,13 +25,13 @@ export const AUTOMATIONS = {
         key: 'message_type',
         name: 'MESSAGE_TYPE',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'private_note',
         name: 'PRIVATE_NOTE',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'content',
@@ -48,13 +49,13 @@ export const AUTOMATIONS = {
         key: 'inbox_id',
         name: 'INBOX',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'status',
         name: 'STATUS',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'assignee_id',
@@ -72,13 +73,13 @@ export const AUTOMATIONS = {
         key: 'priority',
         name: 'PRIORITY',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'conversation_language',
         name: 'CONVERSATION_LANGUAGE',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'phone_number',
@@ -173,13 +174,13 @@ export const AUTOMATIONS = {
         key: 'status',
         name: 'STATUS',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'browser_language',
         name: 'BROWSER_LANGUAGE',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'mail_subject',
@@ -191,7 +192,7 @@ export const AUTOMATIONS = {
         key: 'country_code',
         name: 'COUNTRY_NAME',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'phone_number',
@@ -221,19 +222,19 @@ export const AUTOMATIONS = {
         key: 'inbox_id',
         name: 'INBOX',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'conversation_language',
         name: 'CONVERSATION_LANGUAGE',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'priority',
         name: 'PRIORITY',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'labels',
@@ -308,13 +309,13 @@ export const AUTOMATIONS = {
         key: 'status',
         name: 'STATUS',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'browser_language',
         name: 'BROWSER_LANGUAGE',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'mail_subject',
@@ -326,7 +327,7 @@ export const AUTOMATIONS = {
         key: 'country_code',
         name: 'COUNTRY_NAME',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'referer',
@@ -368,19 +369,19 @@ export const AUTOMATIONS = {
         key: 'inbox_id',
         name: 'INBOX',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'conversation_language',
         name: 'CONVERSATION_LANGUAGE',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'priority',
         name: 'PRIORITY',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'labels',
@@ -455,7 +456,7 @@ export const AUTOMATIONS = {
         key: 'browser_language',
         name: 'BROWSER_LANGUAGE',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'email',
@@ -473,7 +474,7 @@ export const AUTOMATIONS = {
         key: 'country_code',
         name: 'COUNTRY_NAME',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'referer',
@@ -509,19 +510,19 @@ export const AUTOMATIONS = {
         key: 'inbox_id',
         name: 'INBOX',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'conversation_language',
         name: 'CONVERSATION_LANGUAGE',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'priority',
         name: 'PRIORITY',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'labels',
@@ -592,7 +593,7 @@ export const AUTOMATIONS = {
         key: 'browser_language',
         name: 'BROWSER_LANGUAGE',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'email',
@@ -610,7 +611,7 @@ export const AUTOMATIONS = {
         key: 'country_code',
         name: 'COUNTRY_NAME',
         inputType: 'search_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'referer',
@@ -646,19 +647,19 @@ export const AUTOMATIONS = {
         key: 'inbox_id',
         name: 'INBOX',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'conversation_language',
         name: 'CONVERSATION_LANGUAGE',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
       {
         key: 'priority',
         name: 'PRIORITY',
         inputType: 'multi_select',
-        filterOperators: OPERATOR_TYPES_1,
+        filterOperators: OPERATOR_TYPES_STANDARD,
       },
     ],
     actions: [

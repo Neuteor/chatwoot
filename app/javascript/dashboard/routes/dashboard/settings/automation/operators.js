@@ -1,3 +1,14 @@
+export const OPERATOR_TYPES_STANDARD = [
+  {
+    value: 'equal_to',
+    label: 'Equal to',
+  },
+  {
+    value: 'not_equal_to',
+    label: 'Not equal to',
+  },
+];
+
 export const OPERATOR_TYPES_1 = [
   {
     value: 'equal_to',
@@ -6,6 +17,14 @@ export const OPERATOR_TYPES_1 = [
   {
     value: 'not_equal_to',
     label: 'Not equal to',
+  },
+  {
+    value: 'greater_than',
+    label: 'Greater than',
+  },
+  {
+    value: 'less_than',
+    label: 'Less than',
   },
 ];
 
