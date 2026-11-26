@@ -1,4 +1,5 @@
 <script>
+// Header component for settings sub-pages displaying title and description
 export default {
   props: {
     headerTitle: { type: String, default: '' },
