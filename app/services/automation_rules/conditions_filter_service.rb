@@ -117,9 +117,20 @@ class AutomationRules::ConditionsFilterService < FilterService
   def message_query_string(current_filter, query_hash, current_index)
     attribute_key = query_hash['attribute_key']
     query_operator = query_hash['query_operator']
+    filter_operator = query_hash['filter_operator']
 
     attribute_key = 'processed_message_content' if attribute_key == 'content'
     attribute_key = 'private' if attribute_key == 'private_note'
+
+    if %w[greater_than less_than].include?(filter_operator)
+      op_symbol = filter_operator == 'greater_than' ? '>' : '<'
+      val = query_hash['values']&.first
+      @filter_values["value_#{current_index}"] = Float(val) rescue nil
+
+      db_value = "messages.#{attribute_key}"
+
+      return " (CASE WHEN #{db_value}::text ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN CAST(#{db_value}::text AS numeric) ELSE NULL END) #{op_symbol} :value_#{current_index} #{query_operator} "
+    end
 
     filter_operator_value = filter_operation(query_hash, current_index)
 
@@ -137,6 +148,22 @@ class AutomationRules::ConditionsFilterService < FilterService
   def contact_query_string(current_filter, query_hash, current_index)
     attribute_key = query_hash['attribute_key']
     query_operator = query_hash['query_operator']
+    filter_operator = query_hash['filter_operator']
+
+    if %w[greater_than less_than].include?(filter_operator)
+      op_symbol = filter_operator == 'greater_than' ? '>' : '<'
+      val = query_hash['values']&.first
+      @filter_values["value_#{current_index}"] = Float(val) rescue nil
+
+      db_value = case current_filter['attribute_type']
+                 when 'additional_attributes'
+                   "contacts.additional_attributes ->> '#{attribute_key}'"
+                 when 'standard'
+                   "contacts.#{attribute_key}"
+                 end
+
+      return " (CASE WHEN #{db_value}::text ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN CAST(#{db_value}::text AS numeric) ELSE NULL END) #{op_symbol} :value_#{current_index} #{query_operator} "
+    end
 
     filter_operator_value = filter_operation(query_hash, current_index)
 
@@ -151,12 +178,28 @@ class AutomationRules::ConditionsFilterService < FilterService
   def conversation_query_string(table_name, current_filter, query_hash, current_index)
     attribute_key = query_hash['attribute_key']
     query_operator = query_hash['query_operator']
+    filter_operator = query_hash['filter_operator']
 
     if attribute_key == 'assignee_id' && query_hash['filter_operator'].in?(%w[is_present is_not_present])
       return assignee_presence_filter(table_name, query_hash)
     end
 
     return " #{tag_filter_query(query_hash, current_index)} " if attribute_key == 'labels'
+
+    if %w[greater_than less_than].include?(filter_operator)
+      op_symbol = filter_operator == 'greater_than' ? '>' : '<'
+      val = query_hash['values']&.first
+      @filter_values["value_#{current_index}"] = Float(val) rescue nil
+
+      db_value = case current_filter['attribute_type']
+                 when 'additional_attributes'
+                   "#{table_name}.additional_attributes ->> '#{attribute_key}'"
+                 when 'standard'
+                   "#{table_name}.#{attribute_key}"
+                 end
+
+      return " (CASE WHEN #{db_value}::text ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN CAST(#{db_value}::text AS numeric) ELSE NULL END) #{op_symbol} :value_#{current_index} #{query_operator} "
+    end
 
     filter_operator_value = filter_operation(query_hash, current_index)
 
@@ -165,6 +208,36 @@ class AutomationRules::ConditionsFilterService < FilterService
       " #{table_name}.additional_attributes ->> '#{attribute_key}' #{filter_operator_value} #{query_operator} "
     when 'standard'
       " #{table_name}.#{attribute_key} #{filter_operator_value} #{query_operator} "
+    end
+  end
+
+  def custom_attribute_query(query_hash, custom_attribute_type, current_index)
+    attribute_key = query_hash['attribute_key']
+    filter_operator = query_hash['filter_operator']
+    query_operator = query_hash['query_operator']
+
+    custom_attr = @account.custom_attribute_definitions.find_by(
+      attribute_key: attribute_key,
+      attribute_model: custom_attribute_type.presence || 'conversation_attribute'
+    )
+
+    is_numeric = custom_attr.present? && %w[number decimal].include?(custom_attr.attribute_display_type)
+
+    if %w[greater_than less_than].include?(filter_operator) || (is_numeric && filter_operator == 'equal_to')
+      op_symbol = case filter_operator
+                  when 'greater_than' then '>'
+                  when 'less_than' then '<'
+                  when 'equal_to' then '='
+                  end
+
+      val = query_hash['values']&.first
+      @filter_values["value_#{current_index}"] = Float(val) rescue nil
+
+      table_name = custom_attribute_type == 'contact_attribute' ? 'contacts' : 'conversations'
+
+      " (CASE WHEN #{table_name}.custom_attributes ->> '#{attribute_key}' ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN CAST(#{table_name}.custom_attributes ->> '#{attribute_key}' AS numeric) ELSE NULL END) #{op_symbol} :value_#{current_index} #{query_operator} "
+    else
+      super
     end
   end
 

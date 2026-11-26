@@ -3,6 +3,7 @@ import {
   OPERATOR_TYPES_2,
   OPERATOR_TYPES_3,
   OPERATOR_TYPES_6,
+  OPERATOR_TYPES_7,
   CAPTAIN_OPERATOR_TYPES,
 } from './operators';
 

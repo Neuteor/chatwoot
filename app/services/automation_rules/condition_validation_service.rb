@@ -32,7 +32,7 @@ class AutomationRules::ConditionValidationService
     %w[AND OR].include?(query_operator.upcase)
   end
 
-  def valid_condition?(condition)
+    def valid_condition?(condition)
     key = condition['attribute_key']
     if key == Captain::AutomationConditionService::ATTRIBUTE_KEY
       return Captain::AutomationConditionService::OPERATORS.include?(condition['filter_operator'])
@@ -45,7 +45,7 @@ class AutomationRules::ConditionValidationService
     if conversation_filter || contact_filter || message_filter
       operation_valid?(condition, conversation_filter || contact_filter || message_filter)
     else
-      custom_attribute_present?(key, condition['custom_attribute_type'])
+      custom_attribute_present?(key, condition['custom_attribute_type'], condition['filter_operator'])
     end
   end
 
@@ -58,11 +58,16 @@ class AutomationRules::ConditionValidationService
     filter['filter_operators'].include?(filter_operator)
   end
 
-  def custom_attribute_present?(attribute_key, attribute_model)
+  def custom_attribute_present?(attribute_key, attribute_model, filter_operator = nil)
     attribute_model = attribute_model.presence || self.class::ATTRIBUTE_MODEL
 
-    @account.custom_attribute_definitions.where(
+    definition = @account.custom_attribute_definitions.where(
       attribute_model: attribute_model
-    ).find_by(attribute_key: attribute_key).present?
+    ).find_by(attribute_key: attribute_key)
+
+    return false if definition.blank?
+    return true unless %w[greater_than less_than].include?(filter_operator)
+
+    %w[number decimal].include?(definition.attribute_display_type)
   end
 end

@@ -254,5 +254,12 @@
       "LABELS": "Labels",
       "CAPTAIN": "Captain"
     }
+  },
+  "FILTER": {
+    "OPERATOR_LABELS": {
+      "equal_to": "Equal to",
+      "greater_than": "Greater than",
+      "less_than": "Less than"
+    }
   }
 }
