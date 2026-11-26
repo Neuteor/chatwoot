@@ -228,6 +228,77 @@ RSpec.describe AutomationRules::ConditionsFilterService do
       end
     end
 
+    context 'when conditions based on numeric comparison operators' do
+      let!(:custom_attribute_def) do
+        create(:custom_attribute_definition,
+               attribute_key: 'employee_count',
+               account: account,
+               attribute_model: 'contact_attribute',
+               attribute_display_type: 'number')
+      end
+
+      before do
+        conversation.contact.update!(custom_attributes: { employee_count: 500 })
+      end
+
+      context 'with greater_than operator' do
+        it 'returns true when attribute value is greater than threshold' do
+          rule.conditions = [{ 'values': ['100'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }]
+          rule.save!
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+        end
+
+        it 'returns false when attribute value is less than or equal to threshold' do
+          rule.conditions = [{ 'values': ['1000'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }]
+          rule.save!
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+      end
+
+      context 'with less_than operator' do
+        it 'returns true when attribute value is less than threshold' do
+          rule.conditions = [{ 'values': ['1000'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'less_than', 'custom_attribute_type': 'contact_attribute' }]
+          rule.save!
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+        end
+
+        it 'returns false when attribute value is greater than or equal to threshold' do
+          rule.conditions = [{ 'values': ['100'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'less_than', 'custom_attribute_type': 'contact_attribute' }]
+          rule.save!
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+      end
+
+      context 'with equal_to operator' do
+        it 'returns true when attribute value is equal to threshold' do
+          rule.conditions = [{ 'values': ['500'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'equal_to', 'custom_attribute_type': 'contact_attribute' }]
+          rule.save!
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(true)
+        end
+
+        it 'returns false when attribute value is not equal to threshold' do
+          rule.conditions = [{ 'values': ['100'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'equal_to', 'custom_attribute_type': 'contact_attribute' }]
+          rule.save!
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+      end
+
+      context 'with invalid or empty values' do
+        it 'fails gracefully and returns false when attribute value is non-numeric' do
+          conversation.contact.update!(custom_attributes: { employee_count: 'invalid_number' })
+          rule.conditions = [{ 'values': ['100'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }]
+          rule.save!
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+
+        it 'fails gracefully and returns false when threshold is non-numeric' do
+          rule.conditions = [{ 'values': ['invalid_threshold'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }]
+          rule.save!
+          expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
+        end
+      end
+    end
+
     context 'when conditions based on messages attributes' do
       context 'when filter_operator is equal_to' do
         before do

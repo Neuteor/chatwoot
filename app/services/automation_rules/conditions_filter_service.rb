@@ -59,6 +59,11 @@ class AutomationRules::ConditionsFilterService < FilterService
   end
 
   def apply_filter(query_hash, current_index)
+    if numeric_comparison?(query_hash)
+      @query_string += numeric_comparison_query(query_hash, current_index)
+      return
+    end
+
     conversation_filter = @conversation_filters[query_hash['attribute_key']]
     contact_filter = @contact_filters[query_hash['attribute_key']]
     message_filter = @message_filters[query_hash['attribute_key']]
@@ -169,6 +174,71 @@ class AutomationRules::ConditionsFilterService < FilterService
   end
 
   private
+
+  NUMERIC_SQL_OPERATORS = {
+    'greater_than' => '>',
+    'less_than' => '<',
+    'equal_to' => '='
+  }.freeze
+
+  def numeric_comparison?(query_hash)
+    operator = query_hash['filter_operator']
+    return true if %w[greater_than less_than].include?(operator)
+
+    if operator == 'equal_to'
+      custom_attr_def = custom_attribute(query_hash['attribute_key'], @account, query_hash['custom_attribute_type'])
+      return true if custom_attr_def&.attribute_display_type == 'number'
+    end
+
+    false
+  end
+
+  def attribute_sql_expression(query_hash)
+    key = query_hash['attribute_key']
+    custom_type = query_hash['custom_attribute_type']
+
+    if custom_attribute(key, @account, custom_type)
+      table_name = custom_type == 'contact_attribute' ? 'contacts' : 'conversations'
+      "#{table_name}.custom_attributes ->> '#{key}'"
+    elsif (conversation_filter = @conversation_filters[key])
+      if conversation_filter['attribute_type'] == 'additional_attributes'
+        "conversations.additional_attributes ->> '#{key}'"
+      else
+        "conversations.#{key}"
+      end
+    elsif (contact_filter = @contact_filters[key])
+      if contact_filter['attribute_type'] == 'additional_attributes'
+        "contacts.additional_attributes ->> '#{key}'"
+      else
+        "contacts.#{key}"
+      end
+    elsif (message_filter = @message_filters[key])
+      "messages.#{key}"
+    else
+      nil
+    end
+  end
+
+  def safe_numeric_cast(expression)
+    "CASE WHEN (#{expression}) ~ '^\\s*-?[0-9]+(\\.[0-9]+)?\\s*$' THEN CAST(#{expression} AS numeric) ELSE NULL END"
+  end
+
+  def numeric_comparison_query(query_hash, current_index)
+    expression = attribute_sql_expression(query_hash)
+    return " 1=0 #{query_hash['query_operator']} " if expression.nil?
+
+    val = query_hash['values']&.first
+    numeric_val = val.present? ? Float(val) : nil rescue nil
+    return " 1=0 #{query_hash['query_operator']} " if numeric_val.nil?
+
+    sql_operator = NUMERIC_SQL_OPERATORS[query_hash['filter_operator']]
+    return " 1=0 #{query_hash['query_operator']} " if sql_operator.nil?
+
+    cast_expression = safe_numeric_cast(expression)
+    @filter_values["value_#{current_index}"] = numeric_val
+
+    " #{cast_expression} #{sql_operator} :value_#{current_index} #{query_hash['query_operator']} "
+  end
 
   def captain_indexes
     @captain_indexes ||= @rule.conditions.each_index.select do |index|

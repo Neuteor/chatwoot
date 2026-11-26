@@ -122,3 +122,30 @@ export const CAPTAIN_OPERATOR_TYPES = [
     label: 'Does not detect',
   },
 ];
+
+export const NUMERIC_OPERATORS = [
+  {
+    value: 'equal_to',
+    label: 'Equal to',
+  },
+  {
+    value: 'not_equal_to',
+    label: 'Not equal to',
+  },
+  {
+    value: 'is_present',
+    label: 'Is present',
+  },
+  {
+    value: 'is_not_present',
+    label: 'Is not present',
+  },
+  {
+    value: 'greater_than',
+    label: 'Greater than',
+  },
+  {
+    value: 'less_than',
+    label: 'Less than',
+  },
+];

@@ -4,7 +4,12 @@ import {
   OPERATOR_TYPES_3,
   OPERATOR_TYPES_6,
   CAPTAIN_OPERATOR_TYPES,
+  NUMERIC_OPERATORS,
 } from './operators';
+
+export const ATTRIBUTE_OPERATOR_MAPPING = {
+  number: NUMERIC_OPERATORS,
+};
 
 // Free-text condition judged by Captain when the rule runs; offered on every event.
 export const CAPTAIN_CONDITION = {

@@ -45,7 +45,7 @@ class AutomationRules::ConditionValidationService
     if conversation_filter || contact_filter || message_filter
       operation_valid?(condition, conversation_filter || contact_filter || message_filter)
     else
-      custom_attribute_present?(key, condition['custom_attribute_type'])
+      custom_attribute_valid?(condition)
     end
   end
 
@@ -64,5 +64,25 @@ class AutomationRules::ConditionValidationService
     @account.custom_attribute_definitions.where(
       attribute_model: attribute_model
     ).find_by(attribute_key: attribute_key).present?
+  end
+
+  def custom_attribute_valid?(condition)
+    key = condition['attribute_key']
+    attribute_model = condition['custom_attribute_type'].presence || self.class::ATTRIBUTE_MODEL
+
+    custom_attr_def = @account.custom_attribute_definitions.where(
+      attribute_model: attribute_model
+    ).find_by(attribute_key: key)
+
+    return false if custom_attr_def.nil?
+
+    filter_operator = condition['filter_operator']
+    return true if filter_operator == 'attribute_changed'
+
+    if custom_attr_def.attribute_display_type == 'number'
+      %w[equal_to not_equal_to is_present is_not_present greater_than less_than].include?(filter_operator)
+    else
+      true
+    end
   end
 end
