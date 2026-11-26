@@ -176,6 +176,11 @@
       "CONFIRMATION_LABEL": "Yes",
       "CANCEL_LABEL": "No"
     },
+    "OPERATORS": {
+      "GREATER_THAN": "Greater than",
+      "LESS_THAN": "Less than",
+      "EQUAL_TO": "Equal to"
+    },
     "ATTACHMENT": {
       "UPLOAD_ERROR": "Could not upload attachment, Please try again",
       "LABEL_IDLE": "Upload Attachment",

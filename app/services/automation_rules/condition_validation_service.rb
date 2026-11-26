@@ -38,6 +38,16 @@ class AutomationRules::ConditionValidationService
       return Captain::AutomationConditionService::OPERATORS.include?(condition['filter_operator'])
     end
 
+    if %w[greater_than less_than].include?(condition['filter_operator'])
+      return false if condition['values'].blank?
+      return false unless condition['values'].all? { |v| valid_numeric?(v) }
+    end
+
+    if condition['filter_operator'] == 'equal_to' && numeric_custom_attribute?(key, condition['custom_attribute_type'])
+      return false if condition['values'].blank?
+      return false unless condition['values'].all? { |v| valid_numeric?(v) }
+    end
+
     conversation_filter = @conversation_filters[key]
     contact_filter = @contact_filters[key]
     message_filter = @message_filters[key]
@@ -64,5 +74,19 @@ class AutomationRules::ConditionValidationService
     @account.custom_attribute_definitions.where(
       attribute_model: attribute_model
     ).find_by(attribute_key: attribute_key).present?
+  end
+
+  def valid_numeric?(value)
+    return false if value.nil?
+    true if Float(value) rescue false
+  end
+
+  def numeric_custom_attribute?(attribute_key, attribute_model)
+    attribute_model = attribute_model.presence || self.class::ATTRIBUTE_MODEL
+    definition = @account.custom_attribute_definitions.where(
+      attribute_model: attribute_model
+    ).find_by(attribute_key: attribute_key)
+
+    definition.present? && definition.attribute_display_type == 'number'
   end
 end

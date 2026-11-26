@@ -133,5 +133,43 @@ RSpec.describe AutomationRules::ConditionValidationService do
         expect(described_class.new(rule).perform).to be(false)
       end
     end
+
+    context 'with numeric comparison operators' do
+      before do
+        create(:custom_attribute_definition,
+               attribute_key: 'employee_count',
+               account: account,
+               attribute_model: 'contact_attribute',
+               attribute_display_type: 'number')
+      end
+
+      it 'returns true for valid integer threshold' do
+        rule.conditions = [
+          { 'values': ['100'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }
+        ]
+        expect(described_class.new(rule).perform).to be(true)
+      end
+
+      it 'returns true for valid float threshold' do
+        rule.conditions = [
+          { 'values': ['100.5'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'less_than', 'custom_attribute_type': 'contact_attribute' }
+        ]
+        expect(described_class.new(rule).perform).to be(true)
+      end
+
+      it 'returns false for invalid non-numeric threshold' do
+        rule.conditions = [
+          { 'values': ['abc'], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }
+        ]
+        expect(described_class.new(rule).perform).to be(false)
+      end
+
+      it 'returns false for empty threshold' do
+        rule.conditions = [
+          { 'values': [], 'attribute_key': 'employee_count', 'query_operator': nil, 'filter_operator': 'greater_than', 'custom_attribute_type': 'contact_attribute' }
+        ]
+        expect(described_class.new(rule).perform).to be(false)
+      end
+    end
   end
 end

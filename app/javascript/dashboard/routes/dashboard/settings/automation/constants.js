@@ -4,6 +4,7 @@ import {
   OPERATOR_TYPES_3,
   OPERATOR_TYPES_6,
   CAPTAIN_OPERATOR_TYPES,
+  NUMERIC_OPERATORS,
 } from './operators';
 
 // Free-text condition judged by Captain when the rule runs; offered on every event.
@@ -857,3 +858,5 @@ export const DELAYED_TRIGGERS = [
 ];
 
 export const DEFAULT_TRIGGER = DELAYED_TRIGGERS[0].key;
+
+export { NUMERIC_OPERATORS };

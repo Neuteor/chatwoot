@@ -71,6 +71,8 @@ class AutomationRules::ConditionsFilterService < FilterService
       @query_string += contact_query_string(contact_filter, query_hash.with_indifferent_access, current_index)
     elsif message_filter
       @query_string += message_query_string(message_filter, query_hash.with_indifferent_access, current_index)
+    elsif numeric_comparison?(query_hash)
+      @query_string += numeric_query_string(query_hash.with_indifferent_access, current_index)
     elsif custom_attribute(query_hash['attribute_key'], @account, query_hash['custom_attribute_type'])
       # send table name according to attribute key right now we are supporting contact based custom attribute filter
       @query_string += custom_attribute_query(query_hash.with_indifferent_access, query_hash['custom_attribute_type'], current_index)
@@ -174,6 +176,83 @@ class AutomationRules::ConditionsFilterService < FilterService
     @captain_indexes ||= @rule.conditions.each_index.select do |index|
       @rule.conditions[index]['attribute_key'] == Captain::AutomationConditionService::ATTRIBUTE_KEY
     end
+  end
+
+  def numeric_comparison?(query_hash)
+    operator = query_hash['filter_operator']
+    return true if %w[greater_than less_than].include?(operator)
+
+    if operator == 'equal_to'
+      key = query_hash['attribute_key']
+      custom_attribute_type = query_hash['custom_attribute_type']
+      return true if numeric_custom_attribute?(key, custom_attribute_type)
+    end
+
+    false
+  end
+
+  def numeric_custom_attribute?(attribute_key, attribute_model)
+    attribute_model = attribute_model.presence || 'conversation_attribute'
+    definition = @account.custom_attribute_definitions.where(
+      attribute_model: attribute_model
+    ).find_by(attribute_key: attribute_key)
+
+    definition.present? && definition.attribute_display_type == 'number'
+  end
+
+  def numeric_query_string(query_hash, current_index)
+    attribute_key = query_hash['attribute_key']
+    query_operator = query_hash['query_operator']
+    filter_operator = query_hash['filter_operator']
+
+    conversation_filter = @conversation_filters[attribute_key]
+    contact_filter = @contact_filters[attribute_key]
+    message_filter = @message_filters[attribute_key]
+
+    column_expression = nil
+
+    if conversation_filter
+      column_expression = if conversation_filter['attribute_type'] == 'additional_attributes'
+                            "conversations.additional_attributes ->> '#{attribute_key}'"
+                          else
+                            "conversations.#{attribute_key}"
+                          end
+    elsif contact_filter
+      column_expression = if contact_filter['attribute_type'] == 'additional_attributes'
+                            "contacts.additional_attributes ->> '#{attribute_key}'"
+                          else
+                            "contacts.#{attribute_key}"
+                          end
+    elsif message_filter
+      column_expression = "messages.#{attribute_key}"
+    elsif custom_attribute(attribute_key, @account, query_hash['custom_attribute_type'])
+      attribute_model = query_hash['custom_attribute_type'].presence || 'conversation_attribute'
+      table_name = attribute_model == 'contact_attribute' ? 'contacts' : 'conversations'
+      column_expression = "#{table_name}.custom_attributes ->> '#{attribute_key}'"
+    end
+
+    return " 1=0 #{query_operator} " if column_expression.nil?
+
+    value = query_hash['values']&.first
+    numeric_value = Float(value) rescue nil
+
+    return " 1=0 #{query_operator} " if numeric_value.nil?
+
+    sql_operator = case filter_operator
+                   when 'greater_than'
+                     '>'
+                   when 'less_than'
+                     '<'
+                   when 'equal_to'
+                     '='
+                   end
+
+    @filter_values["value_#{current_index}"] = numeric_value
+
+    trimmed_expression = "TRIM(#{column_expression})"
+    safe_numeric_expression = "CASE WHEN #{trimmed_expression} ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN CAST(#{trimmed_expression} AS numeric) ELSE NULL END"
+
+    " #{safe_numeric_expression} #{sql_operator} :value_#{current_index} #{query_operator} "
   end
 
   def matches?(captain_answers)
